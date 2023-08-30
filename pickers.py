@@ -6,6 +6,6 @@ def ask_for_number(letter: str, handler: InputHandler, prefix: str):
 
 
 h = get_input_handler_with_movements()
-h.register_handler('f', ask_for_number)
+h.register_handler("f", ask_for_number)
 while True:
     print(h.take_input())
