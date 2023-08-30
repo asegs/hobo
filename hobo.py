@@ -136,7 +136,11 @@ def move_player(mp: map.Map, p: Player, move: input_handler.Movement):
     if move in map.MOVEMENT_COORDS:
         new_coord = map.coord_diff(p.pos, map.MOVEMENT_COORDS[move])
         if mp.coord_inbounds(new_coord) and mp.tile_at(new_coord) != " ":
-            mp.tile_set(p.pos, p.under)
+            if p.under in undeveloped_levels[1:]:
+                under_idx = undeveloped_levels.index(p.under)
+                mp.tile_set(p.pos, undeveloped_levels[under_idx - 1])
+            else:
+                mp.tile_set(p.pos, p.under)
             p.pos = new_coord
             p.under = mp.tile_at(new_coord)
             mp.tile_set(new_coord, "@")
@@ -192,3 +196,4 @@ while True:
     action = input_entry.take_input()
     if action in map.MOVEMENT_COORDS:
         move_player(m, player, action)
+    m.simulate_turn()
