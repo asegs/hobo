@@ -84,7 +84,7 @@ class Map:
             if line_count < len(stat_keys):
                 print(
                     stat_keys[line_count] + ": " + str(stats[stat_keys[line_count]]),
-                    end="",
+                    end="    ",
                 )
             print()
             line_count += 1

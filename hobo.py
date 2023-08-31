@@ -12,8 +12,8 @@ def fresh_stats(under):
         "Standing on": under,
         "Status": "Peachy",
         "Health": 10,
-        "Food": 10,
-        "Water": 10,
+        "Food": 100,
+        "Water": 100,
         "Turns awake": 0,
         "Logs": 0,
     }
@@ -173,12 +173,27 @@ def handle_player_stats(player, turn_length):
     if turn_length > 1:
         player.stats["Logs"] = min(player.stats["Logs"] + 1, MAX_LOGS)
 
+    if player.stats["Water"] < 0:
+        player.stats["Health"] -= 1
+
+    if player.stats["Food"] < 0:
+        player.stats["Health"] -= 1
+    player.stats["Water"] -= turn_length * 2
+    player.stats["Food"] -= turn_length
+
 
 def build_handler(letter: str, handler: input_handler.InputHandler, prefix: str) -> str:
     return place_tile(m, player)
 
 
+def interact_handler(
+    letter: str, handler: input_handler.InputHandler, prefix: str
+) -> str:
+    return interact(m, player)
+
+
 input_entry.register_handler("b", build_handler)
+input_entry.register_handler("i", interact_handler)
 
 
 def place_tile(mp: map.Map, p: Player):
@@ -201,6 +216,15 @@ def place_tile(mp: map.Map, p: Player):
             mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), " ")
         else:
             p.stats["Status"] = "No water near"
+
+
+def interact(mp: map.Map, p: Player):
+    direction = input_entry.take_directional_input()
+    build_tile = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
+    at_build = mp.tile_at(build_tile)
+
+    if at_build == WATER:
+        p.stats["Water"] = 100
 
 
 themes = {

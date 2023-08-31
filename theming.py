@@ -12,6 +12,20 @@ def to_rgb(text, rgb):
     )
 
 
+def to_color_text(text, rgb):
+    return (
+        "\033[38;2;"
+        + str(rgb[0])
+        + ";"
+        + str(rgb[1])
+        + ";"
+        + str(rgb[2])
+        + "m"
+        + text
+        + "\033[39m\033[49m"
+    )
+
+
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
