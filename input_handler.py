@@ -14,7 +14,14 @@ ESCAPE_BRACKET = 91
 ESCAPE_TIMEOUT_SECONDS = 1
 
 
+def empty_buffer_line():
+    for i in range(0, 120):
+        print(" ", end="")
+    print("\r", end="")
+
+
 def get_input_buffer(message: str):
+    empty_buffer_line()
     click.echo(message, nl=False)
     return click.getchar()
 
@@ -42,13 +49,14 @@ class InputHandler:
         input_buffer = get_input_buffer(prompt)
         if prompt != "":
             # This isn't a top level event, this is in the context of a text prompt
-            click.echo(input_buffer, nl=True)
+            click.echo(input_buffer, nl=False)
             return input_buffer
         for letter in input_buffer:
             self.input_queue.put(letter)
         return self.handle_letter(self.input_queue.get())
 
     def take_directional_input(self):
+        empty_buffer_line()
         click.echo("In which direction? ", nl=False)
         return self.take_input()
 

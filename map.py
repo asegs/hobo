@@ -34,6 +34,7 @@ class Map:
         self.generators = generators
         self.tile_handlers = tile_handlers
         self.color_map = color_map
+        self.turns = 0
 
     def coord_inbounds(self, coord: Coord):
         return 0 <= coord.row < self.height and 0 <= coord.col < self.width
@@ -62,17 +63,31 @@ class Map:
         for generator in self.generators:
             generator(self, generator_args)
 
-    def simulate_turn(self):
+    def simulate_turn(self, turns):
+        handlers_to_run = []
+        for i in range(turns):
+            self.turns += 1
+            for handler_pair in self.tile_handlers:
+                if self.turns % handler_pair[1] == 0:
+                    handlers_to_run.append(handler_pair[0])
         all_tiles = self.iterate_coords()
-        for handler in self.tile_handlers:
+        for handler in handlers_to_run:
             for coord in all_tiles:
                 handler(self, coord)
 
-    def display(self):
+    def display(self, stats={}):
+        line_count = 0
+        stat_keys = list(stats.keys())
         for line in self.grid:
             for letter in line:
                 print(self.tile_to_color(letter), end="")
+            if line_count < len(stat_keys):
+                print(
+                    stat_keys[line_count] + ": " + str(stats[stat_keys[line_count]]),
+                    end="",
+                )
             print()
+            line_count += 1
         if False:
             self.cursor_to_top()
 
@@ -105,5 +120,5 @@ class Map:
         return theming.to_rgb(" ", theming.GREY)
 
     def cursor_to_top(self):
-        print("\033[" + str(self.height + 1) + "A")
-        print("\033[" + str(self.width) + "D")
+        print("\033[" + str(self.height + 1) + "A", end="")
+        print("\033[" + str(self.width) + "D", end="")

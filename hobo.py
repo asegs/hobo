@@ -5,10 +5,15 @@ from dataclasses import dataclass
 import input_handler
 
 
+def fresh_stats():
+    return {"Health": 10, "Food": 10, "Water": 10, "Turns awake": 0, "Logs": 0}
+
+
 @dataclass
 class Player:
     pos: map.Coord
     under: str
+    stats: dict
 
 
 DEMO = False
@@ -20,6 +25,12 @@ undeveloped_levels = ["%", "&", "#"]
 
 UNINITIALIZED = "a"
 WATER = " "
+
+
+def travel_time(letter):
+    if letter in undeveloped_levels:
+        return undeveloped_levels.index(letter) + 1
+    return 0
 
 
 def erode(mp, args):
@@ -127,7 +138,7 @@ def make_player(mp: map.Map) -> Player:
     at = mp.tile_at(coord)
     if at != " ":
         mp.tile_set(coord, "@")
-        return Player(coord, at)
+        return Player(coord, at, fresh_stats())
 
     return make_player(mp)
 
@@ -146,6 +157,10 @@ def move_player(mp: map.Map, p: Player, move: input_handler.Movement):
             mp.tile_set(new_coord, "@")
 
 
+def handle_player_stats(player, turn_length):
+    player.stats["Turns awake"] += turn_length
+
+
 def build_handler(letter: str, handler: input_handler.InputHandler, prefix: str) -> str:
     return place_tile(m, player)
 
@@ -154,10 +169,16 @@ input_entry.register_handler("b", build_handler)
 
 
 def place_tile(mp: map.Map, p: Player):
-    choice = input_entry.take_input("Do you want to build a (p)ath?")
+    choice = input_entry.take_input("Do you want to build a (p)ath or dig (w)ater?")
     if choice == "p":
         direction = input_entry.take_directional_input()
         mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), ".")
+    if choice == "w":
+        direction = input_entry.take_directional_input()
+        water_position = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
+        water_borders = mp.count_borders(WATER, water_position)
+        if water_borders > 0:
+            mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), " ")
 
 
 themes = {
@@ -171,11 +192,11 @@ themes = {
 }
 
 m = map.Map(
-    190,
+    165,
     54,
     UNINITIALIZED,
     [draw_streams, erode, draw_land],
-    [vegetation_thicken],
+    [(vegetation_thicken, 20)],
     themes,
 )
 map_args = {
@@ -192,8 +213,10 @@ player = make_player(m)
 
 while True:
     m.cursor_to_top()
-    m.display()
+    m.display(player.stats)
     action = input_entry.take_input()
     if action in map.MOVEMENT_COORDS:
         move_player(m, player, action)
-    m.simulate_turn()
+    turn_length = travel_time(player.under)
+    handle_player_stats(player, turn_length)
+    m.simulate_turn(turn_length)
