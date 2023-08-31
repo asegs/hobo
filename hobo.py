@@ -4,9 +4,19 @@ import theming
 from dataclasses import dataclass
 import input_handler
 
+MAX_LOGS = 3
 
-def fresh_stats():
-    return {"Health": 10, "Food": 10, "Water": 10, "Turns awake": 0, "Logs": 0}
+
+def fresh_stats(under):
+    return {
+        "Standing on": under,
+        "Status": "Peachy",
+        "Health": 10,
+        "Food": 10,
+        "Water": 10,
+        "Turns awake": 0,
+        "Logs": 0,
+    }
 
 
 @dataclass
@@ -22,6 +32,7 @@ VEGETATION_ENCLOSED_BONUS = 10
 VEGETATION_ENCLOSED_STANDARD = 6
 
 undeveloped_levels = ["%", "&", "#"]
+costs = {"path": 1, "bridge": 3}
 
 UNINITIALIZED = "a"
 WATER = " "
@@ -138,7 +149,7 @@ def make_player(mp: map.Map) -> Player:
     at = mp.tile_at(coord)
     if at != " ":
         mp.tile_set(coord, "@")
-        return Player(coord, at, fresh_stats())
+        return Player(coord, at, fresh_stats(at))
 
     return make_player(mp)
 
@@ -159,6 +170,8 @@ def move_player(mp: map.Map, p: Player, move: input_handler.Movement):
 
 def handle_player_stats(player, turn_length):
     player.stats["Turns awake"] += turn_length
+    if turn_length > 1:
+        player.stats["Logs"] = min(player.stats["Logs"] + 1, MAX_LOGS)
 
 
 def build_handler(letter: str, handler: input_handler.InputHandler, prefix: str) -> str:
@@ -172,13 +185,22 @@ def place_tile(mp: map.Map, p: Player):
     choice = input_entry.take_input("Do you want to build a (p)ath or dig (w)ater?")
     if choice == "p":
         direction = input_entry.take_directional_input()
-        mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), ".")
+        build_tile = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
+        at_build = mp.tile_at(build_tile)
+        cost = costs["bridge"] if at_build == " " else costs["path"]
+        if cost <= p.stats["Logs"]:
+            mp.tile_set(build_tile, ".")
+            p.stats["Logs"] -= cost
+        else:
+            p.stats["Status"] = "Need more logs"
     if choice == "w":
         direction = input_entry.take_directional_input()
         water_position = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
         water_borders = mp.count_borders(WATER, water_position)
         if water_borders > 0:
             mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), " ")
+        else:
+            p.stats["Status"] = "No water near"
 
 
 themes = {
