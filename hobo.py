@@ -200,6 +200,8 @@ def place_tile(mp: map.Map, p: Player):
     choice = input_entry.take_input("Do you want to build a (p)ath or dig (w)ater?")
     if choice == "p":
         direction = input_entry.take_directional_input()
+        if direction not in map.MOVEMENT_COORDS:
+            return
         build_tile = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
         at_build = mp.tile_at(build_tile)
         cost = costs["bridge"] if at_build == " " else costs["path"]
@@ -210,6 +212,8 @@ def place_tile(mp: map.Map, p: Player):
             p.stats["Status"] = "Need more logs"
     if choice == "w":
         direction = input_entry.take_directional_input()
+        if direction not in map.MOVEMENT_COORDS:
+            return
         water_position = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
         water_borders = mp.count_borders(WATER, water_position)
         if water_borders > 0:
@@ -220,6 +224,8 @@ def place_tile(mp: map.Map, p: Player):
 
 def interact(mp: map.Map, p: Player):
     direction = input_entry.take_directional_input()
+    if direction not in map.MOVEMENT_COORDS:
+        return
     build_tile = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
     at_build = mp.tile_at(build_tile)
 
@@ -237,6 +243,14 @@ themes = {
     ".": theming.DARK_BROWN,
 }
 
+status_rules = {
+    "Food": (0, 100),
+    "Water": (0, 100),
+    "Health": (0, 10),
+    "Turns awake": (500, 0),
+    "Logs": (0, 3),
+}
+
 m = map.Map(
     165,
     54,
@@ -244,6 +258,7 @@ m = map.Map(
     [draw_streams, erode, draw_land],
     [(vegetation_thicken, 20)],
     themes,
+    status_rules,
 )
 map_args = {
     "spawns": 3,

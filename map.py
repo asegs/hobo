@@ -27,7 +27,16 @@ def coord_diff(c1: Coord, c2: Coord):
 
 
 class Map:
-    def __init__(self, width, height, default, generators, tile_handlers, color_map):
+    def __init__(
+        self,
+        width,
+        height,
+        default,
+        generators,
+        tile_handlers,
+        color_map,
+        status_rules={},
+    ):
         self.grid = [[default for i in range(width)] for j in range(height)]
         self.width = width
         self.height = height
@@ -35,6 +44,7 @@ class Map:
         self.tile_handlers = tile_handlers
         self.color_map = color_map
         self.turns = 0
+        self.status_rules = status_rules
 
     def coord_inbounds(self, coord: Coord):
         return 0 <= coord.row < self.height and 0 <= coord.col < self.width
@@ -82,10 +92,22 @@ class Map:
             for letter in line:
                 print(self.tile_to_color(letter), end="")
             if line_count < len(stat_keys):
-                print(
-                    stat_keys[line_count] + ": " + str(stats[stat_keys[line_count]]),
-                    end="    ",
-                )
+                stat_name = stat_keys[line_count]
+                print(stat_name + ": ", end="")
+                if stat_name in self.status_rules:
+                    rule = self.status_rules[stat_name]
+                    print(
+                        theming.color_text_with_score(
+                            str(stats[stat_name]), rule[0], rule[1], stats[stat_name]
+                        ),
+                        end="   ",
+                    )
+                else:
+                    print(
+                        str(stats[stat_keys[line_count]]),
+                        end="    ",
+                    )
+
             print()
             line_count += 1
         if False:
