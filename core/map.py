@@ -1,7 +1,7 @@
 import random
 
-import input_handler
-import theming
+from core import input_handler
+from core import theming
 from dataclasses import dataclass
 
 

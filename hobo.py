@@ -1,8 +1,8 @@
-import map
 import random
-import theming
 from dataclasses import dataclass
-import input_handler
+
+import map_generator
+from core import input_handler, map, theming
 
 MAX_LOGS = 3
 
@@ -97,9 +97,9 @@ def tile_uninitialized_and_by_water(mp, coord, water_percentage):
 
 
 def draw_streams(mp: map.Map, args):
-    initial_waters = args.get("initial_waters", 3)
-    water_percentage = args.get("water_percentage", 0.5)
-    traces = args.get("traces", 1)
+    initial_waters = args.get("spawns", 3)
+    water_percentage = args.get("spread", 0.5)
+    traces = args.get("cycles", 1)
 
     for i in range(0, initial_waters):
         picked_coord = mp.random_coord()
@@ -364,16 +364,10 @@ m = map.Map(
     bg_themes,
     status_rules,
 )
-map_args = {
-    "spawns": 3,
-    "spread": 0.5,
-    "cycles": 10,
-    "tolerance": 4,
-    "ruggedness": 0.5,
-    "land_cycles": 50,
-    "berry_spawns": 50,
-}
-m.initialize_terrain(map_args)
+
+
+m.initialize_terrain(map_generator.ask_about_map())
+m.display()
 
 player = make_player(m)
 
