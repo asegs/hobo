@@ -1,3 +1,5 @@
+import sys
+
 import input_handler
 import theming
 from dataclasses import dataclass
@@ -7,6 +9,12 @@ from dataclasses import dataclass
 class Coord:
     row: int
     col: int
+
+
+@dataclass
+class Tile:
+    fg: str
+    bg: str
 
 
 MOVEMENT_COORDS = {
@@ -29,20 +37,25 @@ def coord_diff(c1: Coord, c2: Coord):
 class Map:
     def __init__(
         self,
-        width,
-        height,
-        default,
-        generators,
-        tile_handlers,
-        color_map,
+        width: int,
+        height: int,
+        default_bg: str,
+        default_fg: str,
+        generators: list,
+        tile_handlers: list,
+        fg_theming: dict,
+        bg_theming: dict,
         status_rules={},
     ):
-        self.grid = [[default for i in range(width)] for j in range(height)]
+        self.grid = [
+            [Tile(default_fg, default_bg) for i in range(width)] for j in range(height)
+        ]
         self.width = width
         self.height = height
         self.generators = generators
         self.tile_handlers = tile_handlers
-        self.color_map = color_map
+        self.fg_theming = fg_theming
+        self.bg_theming = bg_theming
         self.turns = 0
         self.status_rules = status_rules
 
@@ -60,13 +73,20 @@ class Map:
             return self.grid[coord.row][coord.col]
         return None
 
-    def tile_set(self, coord: Coord, to: str):
+    def tile_set(self, coord: Coord, to: str, fg=False):
         if self.coord_inbounds(coord):
-            self.grid[coord.row][coord.col] = to
+            if fg:
+                self.grid[coord.row][coord.col].fg = to
+            else:
+                self.grid[coord.row][coord.col].bg = to
 
-    def tile_is(self, coord: Coord, match: str):
+    def tile_is(self, coord: Coord, match: str, fg=False):
         if self.coord_inbounds(coord):
-            return self.tile_at(coord) == match
+            if fg:
+                return self.tile_at(coord).fg == match
+            else:
+                return self.tile_at(coord).bg == match
+
         return False
 
     def initialize_terrain(self, generator_args):
@@ -89,8 +109,8 @@ class Map:
         line_count = 0
         stat_keys = list(stats.keys())
         for line in self.grid:
-            for letter in line:
-                print(self.tile_to_color(letter), end="")
+            for tile in line:
+                print(self.tile_to_color(tile), end="")
             if line_count < len(stat_keys):
                 stat_name = stat_keys[line_count]
                 print(stat_name + ": ", end="")
@@ -136,10 +156,10 @@ class Map:
 
         return count
 
-    def tile_to_color(self, letter):
-        if letter in self.color_map:
-            return theming.to_rgb(" ", self.color_map[letter])
-        return theming.to_rgb(" ", theming.GREY)
+    def tile_to_color(self, tile):
+        bg_color = self.bg_theming.get(tile.bg, theming.GREY)
+        fg_color = self.fg_theming.get(tile.fg, theming.GREY)
+        return theming.full_rgb(tile.fg, fg_color, bg_color)
 
     def cursor_to_top(self):
         print("\033[" + str(self.height + 1) + "A", end="")

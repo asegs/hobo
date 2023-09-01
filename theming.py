@@ -1,4 +1,5 @@
 import colorsys
+import colorist
 
 MAX_HUE = 138
 
@@ -7,32 +8,12 @@ def hsv2rgb(h, s, v):
     return tuple(round(i * 255) for i in colorsys.hsv_to_rgb(h, s, v))
 
 
-def to_rgb(text, rgb):
-    return (
-        "\033[48;2;"
-        + str(rgb[0])
-        + ";"
-        + str(rgb[1])
-        + ";"
-        + str(rgb[2])
-        + "m"
-        + text
-        + "\033[39m\033[49m"
-    )
+def full_rgb(text, fg, bg):
+    return f"{colorist.BgColorRGB(bg[0], bg[1], bg[2]) }{colorist.ColorRGB(fg[0], fg[1], fg[2])}{text}{colorist.Color.OFF}{colorist.BgColor.OFF}"
 
 
 def to_color_text(text, rgb):
-    return (
-        "\033[38;2;"
-        + str(rgb[0])
-        + ";"
-        + str(rgb[1])
-        + ";"
-        + str(rgb[2])
-        + "m"
-        + text
-        + "\033[39m\033[49m"
-    )
+    return f"{colorist.ColorRGB(rgb[0], rgb[1], rgb[2])}{text}{colorist.Color.OFF}"
 
 
 def color_quality(worst, best, score):
@@ -56,6 +37,7 @@ DEEP_GREEN = (3, 84, 9)
 MID_GREEN = (0, 156, 12)
 LIGHT_GREEN = (95, 179, 46)
 
-WATER = (33, 186, 207)
+WATER = (45, 109, 194)
 GREY = (142, 152, 153)
 DARK_BROWN = (82, 48, 5)
+TAN = (235, 134, 52)
