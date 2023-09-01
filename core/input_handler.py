@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Callable
 import click
 import queue
@@ -116,3 +117,6 @@ def get_input_handler_with_movements() -> InputHandler:
     handler.register_handler(chr(TAB_CHAR), movement_passthrough)
     handler.register_handler(chr(SPACE_CHAR), movement_passthrough)
     return handler
+
+
+os.system("color for windoze")
