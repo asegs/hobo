@@ -120,4 +120,5 @@ def get_input_handler_with_movements() -> InputHandler:
 
 
 if os.name == "nt":
-    os.system("color for windoze")
+    # this provides colored terminals on windows, for a good reason
+    os.system("color")
