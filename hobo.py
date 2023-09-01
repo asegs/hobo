@@ -7,9 +7,8 @@ import input_handler
 MAX_LOGS = 3
 
 
-def fresh_stats(under):
+def fresh_stats():
     return {
-        "Standing on": under,
         "Status": "Peachy",
         "Health": 10,
         "Food": 100,
@@ -26,16 +25,50 @@ class Player:
     stats: dict
 
 
+@dataclass
+class InProgress:
+    remaining_cost: int
+    location: map.Coord
+    finished_symbol: str
+
+
 DEMO = False
+CYCLE_TEST = False
 VEGETATION_GROWTH_RATE = 0.001
 VEGETATION_ENCLOSED_BONUS = 10
 VEGETATION_ENCLOSED_STANDARD = 6
 
+BERRY_EATEN_CHANCE = 0.05
+
 undeveloped_levels = ["%", "&", "#"]
 costs = {"path": 1, "bridge": 3, "shelter": 3}
+in_progress = []
 
 UNINITIALIZED = "a"
 WATER = " "
+
+
+def get_unfinished_by_coord(coord: map.Coord) -> InProgress:
+    for unfinished in in_progress:
+        if (
+            unfinished.location.row == coord.row
+            and unfinished.location.col == coord.col
+        ):
+            return unfinished
+    return None
+
+
+def cleanup_in_progress():
+    global in_progress
+    new_progress = []
+    for progress in in_progress:
+        if progress.remaining_cost > 0:
+            new_progress.append(progress)
+    in_progress = new_progress
+
+
+def set_status(player_ref, message):
+    player_ref.stats["Status"] = message
 
 
 def travel_time(letter):
@@ -67,12 +100,10 @@ def draw_streams(mp: map.Map, args):
     initial_waters = args.get("initial_waters", 3)
     water_percentage = args.get("water_percentage", 0.5)
     traces = args.get("traces", 1)
-    tiles = mp.width * mp.height
+
     for i in range(0, initial_waters):
-        place = random.randint(0, tiles - 1)
-        row = int(place / mp.width)
-        col = place - row * mp.width
-        mp.grid[row][col].bg = WATER
+        picked_coord = mp.random_coord()
+        mp.tile_set(picked_coord, WATER)
 
     all_tiles = mp.iterate_coords()
     for i in range(0, traces):
@@ -138,18 +169,30 @@ def draw_land(mp, args):
             mp.display()
 
 
+def place_berries(mp: map.Map, args):
+    spawns_count = args.get("berry_spawns", 15)
+    for i in range(spawns_count):
+        location = mp.random_coord()
+        tile = mp.tile_at(location)
+        if tile.bg == "%" and tile.fg == " ":
+            mp.tile_set(location, "*", True)
+
+
+def berries_eaten(mp: map.Map, coord: map.Coord):
+    if mp.tile_at(coord).fg == "*":
+        if random.random() < BERRY_EATEN_CHANCE:
+            mp.tile_set(coord, " ", True)
+
+
 input_entry = input_handler.get_input_handler_with_movements()
 
 
 def make_player(mp: map.Map) -> Player:
-    row = random.randint(0, mp.height - 1)
-    col = random.randint(0, mp.width - 1)
-
-    coord = map.Coord(row, col)
+    coord = mp.random_coord()
     at = mp.tile_at(coord)
     if at.bg != " ":
         mp.tile_set(coord, "@", True)
-        return Player(coord, " ", fresh_stats(at.fg))
+        return Player(coord, " ", fresh_stats())
 
     return make_player(mp)
 
@@ -212,8 +255,13 @@ def place_tile(mp: map.Map, p: Player):
         if cost <= p.stats["Logs"]:
             mp.tile_set(build_tile, ".")
             p.stats["Logs"] -= cost
+        elif p.stats["Logs"] > 0:
+            mp.tile_set(build_tile, "?", True)
+            in_progress.append(InProgress(cost - p.stats["Logs"], build_tile, "."))
+            p.stats["Logs"] = 0
         else:
-            p.stats["Status"] = "Need more logs"
+            set_status(p, "Need more logs")
+
     if choice == "w":
         direction = input_entry.take_directional_input()
         if direction not in map.MOVEMENT_COORDS:
@@ -223,23 +271,27 @@ def place_tile(mp: map.Map, p: Player):
         if water_borders > 0:
             mp.tile_set(map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction]), " ")
         else:
-            p.stats["Status"] = "No water near"
+            set_status(p, "No water near")
     if choice == "s":
         direction = input_entry.take_directional_input()
         if direction not in map.MOVEMENT_COORDS:
             return
         build_tile = map.coord_diff(p.pos, map.MOVEMENT_COORDS[direction])
         at_build = mp.tile_at(build_tile)
+        cost = costs["shelter"]
+
         if at_build.bg == " ":
-            p.stats["Status"] = "Too wet"
+            set_status(p, "Too wet")
             return
-
-        if costs["shelter"] > p.stats["Logs"]:
-            p.stats["Status"] = "Need more logs"
-            return
-
-        mp.tile_set(build_tile, "^", True)
-        p.stats["Logs"] -= costs["shelter"]
+        elif p.stats["Logs"] >= cost:
+            mp.tile_set(build_tile, "^", True)
+            p.stats["Logs"] -= cost
+        elif p.stats["Logs"] > 0:
+            mp.tile_set(build_tile, "?", True)
+            in_progress.append(InProgress(cost - p.stats["Logs"], build_tile, "^"))
+            p.stats["Logs"] = 0
+        else:
+            set_status(p, "Need more logs")
 
 
 def interact(mp: map.Map, p: Player):
@@ -251,12 +303,25 @@ def interact(mp: map.Map, p: Player):
 
     if at_build.bg == WATER:
         p.stats["Water"] = 100
-        return
 
     if at_build.fg == "^":
         for i in range(p.stats["Health"], 10):
             mp.simulate_turn(10)
             p.stats["Health"] += 1
+    if at_build.fg == "*":
+        p.stats["Food"] = min(100, p.stats["Food"] + 50)
+        mp.tile_set(build_tile, " ", True)
+    if at_build.fg == "?":
+        if p.stats["Logs"] > 0:
+            progress = get_unfinished_by_coord(build_tile)
+            if progress:
+                if progress.remaining_cost <= p.stats["Logs"]:
+                    p.stats["Logs"] -= progress.remaining_cost
+                    mp.tile_set(build_tile, progress.finished_symbol, True)
+                    cleanup_in_progress()
+                else:
+                    progress.remaining_cost -= p.stats["Logs"]
+                    p.stats["Logs"] = 0
 
 
 bg_themes = {
@@ -268,7 +333,12 @@ bg_themes = {
     ".": theming.DARK_BROWN,
 }
 
-fg_themes = {"@": theming.RED, "^": theming.TAN}
+fg_themes = {
+    "@": theming.RED,
+    "^": theming.TAN,
+    "*": theming.RED,
+    "?": theming.ATTENTION,
+}
 
 
 status_rules = {
@@ -284,8 +354,12 @@ m = map.Map(
     54,
     UNINITIALIZED,
     " ",
-    [draw_streams, erode, draw_land],
-    [(vegetation_thicken, 20)],
+    [draw_streams, erode, draw_land, place_berries],
+    [
+        (vegetation_thicken, 20, True),
+        (lambda mp: place_berries(mp, {}), 30, False),
+        (berries_eaten, 50, True),
+    ],
     fg_themes,
     bg_themes,
     status_rules,
@@ -297,6 +371,7 @@ map_args = {
     "tolerance": 4,
     "ruggedness": 0.5,
     "land_cycles": 50,
+    "berry_spawns": 50,
 }
 m.initialize_terrain(map_args)
 
@@ -305,6 +380,8 @@ player = make_player(m)
 while True:
     m.cursor_to_top()
     m.display(player.stats)
+    if CYCLE_TEST:
+        m.simulate_turn(1000)
     action = input_entry.take_input()
     if action in map.MOVEMENT_COORDS:
         move_player(m, player, action)

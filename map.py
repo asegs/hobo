@@ -1,4 +1,4 @@
-import sys
+import random
 
 import input_handler
 import theming
@@ -89,21 +89,37 @@ class Map:
 
         return False
 
+    def random_coord(self):
+        total_tiles = self.width * self.height
+        place = random.randint(0, total_tiles - 1)
+        row = int(place / self.width)
+        col = place - row * self.width
+        return Coord(row, col)
+
     def initialize_terrain(self, generator_args):
         for generator in self.generators:
             generator(self, generator_args)
 
     def simulate_turn(self, turns):
-        handlers_to_run = []
+        handlers_to_run_on_tiles = []
+        handlers_to_run_on_map = []
         for i in range(turns):
             self.turns += 1
-            for handler_pair in self.tile_handlers:
-                if self.turns % handler_pair[1] == 0:
-                    handlers_to_run.append(handler_pair[0])
-        all_tiles = self.iterate_coords()
-        for handler in handlers_to_run:
-            for coord in all_tiles:
-                handler(self, coord)
+            for handler, every, per_tile in self.tile_handlers:
+                if self.turns % every == 0:
+                    if per_tile:
+                        handlers_to_run_on_tiles.append(handler)
+                    else:
+                        handlers_to_run_on_map.append(handler)
+
+        for handler in handlers_to_run_on_map:
+            handler(self)
+
+        if len(handlers_to_run_on_tiles) > 0:
+            all_tiles = self.iterate_coords()
+            for handler in handlers_to_run_on_tiles:
+                for coord in all_tiles:
+                    handler(self, coord)
 
     def display(self, stats={}):
         line_count = 0
