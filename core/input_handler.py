@@ -119,4 +119,5 @@ def get_input_handler_with_movements() -> InputHandler:
     return handler
 
 
-os.system("color for windoze")
+if os.name == "nt":
+    os.system("color for windoze")
