@@ -12,6 +12,8 @@ ESCAPE_CHAR = 27
 SPACE_CHAR = 32
 ESCAPE_BRACKET = 91
 
+WINDOWS_ESCAPE_CHAR = 224
+
 ESCAPE_TIMEOUT_SECONDS = 1
 
 
@@ -87,10 +89,14 @@ MOVEMENT_MAP = {
     ESCAPE_CHAR: Movement.ESCAPE,
     TAB_CHAR: Movement.TAB,
     SPACE_CHAR: Movement.SPACE,
+    72: Movement.UP,
+    75: Movement.LEFT,
+    77: Movement.RIGHT,
+    80: Movement.DOWN,
 }
 
 
-def escape(letter: str, handler: InputHandler, prefix: str) -> Movement:
+def escape_unix(letter: str, handler: InputHandler, prefix: str) -> Movement:
     try:
         next_letter = ord(handler.input_queue.get(True, ESCAPE_TIMEOUT_SECONDS))
     except queue.Empty:
@@ -110,12 +116,25 @@ def escape(letter: str, handler: InputHandler, prefix: str) -> Movement:
     return Movement.ESCAPE
 
 
+def escape_windows(letter: str, handler: InputHandler, prefix: str) -> Movement:
+    try:
+        movement_code = ord(handler.input_queue.get(True, ESCAPE_TIMEOUT_SECONDS))
+    except queue.Empty:
+        return Movement.ESCAPE
+
+    if movement_code in MOVEMENT_MAP:
+        return MOVEMENT_MAP[movement_code]
+
+    return Movement.ESCAPE
+
+
 def get_input_handler_with_movements() -> InputHandler:
     handler = InputHandler()
-    handler.register_handler(chr(ESCAPE_CHAR), escape)
+    handler.register_handler(chr(ESCAPE_CHAR), escape_unix)
     handler.register_handler(chr(ENTER_CHAR), movement_passthrough)
     handler.register_handler(chr(TAB_CHAR), movement_passthrough)
     handler.register_handler(chr(SPACE_CHAR), movement_passthrough)
+    handler.register_handler(chr(WINDOWS_ESCAPE_CHAR), escape_windows)
     return handler
 
 
