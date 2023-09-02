@@ -305,6 +305,7 @@ def interact(mp: map.Map, p: Player):
         p.stats["Water"] = 100
 
     if at_build.fg == "^":
+        p.stats["Turns awake"] = 0
         for i in range(p.stats["Health"], 10):
             mp.simulate_turn(10)
             p.stats["Health"] += 1
