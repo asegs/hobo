@@ -1,6 +1,10 @@
 # Hobo
 ## A text based game for the modern vagrant.
 
+To run:
+- `pip(3) install -r requirements.txt`
+- `python(3) hobo.py`
+
 Hobo is a sequel to the widely loved Hobo Encampment game.  It incorporates an updated rendering system complete with color and realtime input, as well as a flexible map simulation system that allows for a living breathing world.
 Hobo comes tightly coupled with a generic ASCII game engine written in Python that provides map interactions, input handling, and a functional approach to world updates.
 
