@@ -80,8 +80,8 @@ class Map:
             else:
                 self.grid[coord.row][coord.col].bg = to
 
-    def tile_is(self, coord: Coord, match: str, fg=False):
-        if self.coord_inbounds(coord):
+    def tile_is(self, coord: Coord, match: str, fg=False, bypass_inbounds=False):
+        if bypass_inbounds or self.coord_inbounds(coord):
             if fg:
                 return self.tile_at(coord).fg == match
             else:
@@ -150,24 +150,36 @@ class Map:
             self.cursor_to_top()
 
     def if_borders(self, match, coord: Coord, diag=False):
+        not_edge = self.coord_not_edge(coord)
         has_border = False
         if diag:
             for border in diag_borders:
-                has_border |= self.tile_is(coord_diff(border, coord), match)
+                has_border |= self.tile_is(
+                    coord_diff(border, coord), match, bypass_inbounds=not_edge
+                )
+                if has_border:
+                    return True
         for border in straight_borders:
-            has_border |= self.tile_is(coord_diff(border, coord), match)
+            has_border |= self.tile_is(
+                coord_diff(border, coord), match, bypass_inbounds=not_edge
+            )
+            if has_border:
+                return True
 
         return has_border
 
     def count_borders(self, match, coord, diag=True):
+        not_edge = self.coord_not_edge(coord)
         count = 0
         if diag:
             for border in diag_borders:
-                if self.tile_is(coord_diff(border, coord), match):
+                if self.tile_is(
+                    coord_diff(border, coord), match, bypass_inbounds=not_edge
+                ):
                     count += 1
 
         for border in straight_borders:
-            if self.tile_is(coord_diff(border, coord), match):
+            if self.tile_is(coord_diff(border, coord), match, bypass_inbounds=not_edge):
                 count += 1
 
         return count
@@ -180,3 +192,6 @@ class Map:
     def cursor_to_top(self):
         print("\033[" + str(self.height + 1) + "A", end="")
         print("\033[" + str(self.width) + "D", end="")
+
+    def coord_not_edge(self, coord: Coord) -> bool:
+        return 0 < coord.row < self.height - 1 and 0 < coord.col < self.width - 1
