@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import Callable
 import click
 import queue
@@ -16,6 +17,21 @@ WINDOWS_ESCAPE_CHAR = 224
 
 ESCAPE_TIMEOUT_SECONDS = 1
 
+LIVE_TERMINAL_MODE = sys.stdin.isatty()
+
+
+def aware_print(text: str, nl: bool) -> None:
+    if LIVE_TERMINAL_MODE:
+        click.echo(text, nl=nl)
+    else:
+        print(text, end=("\n" if nl else ""))
+
+
+def aware_getch() -> str:
+    if LIVE_TERMINAL_MODE:
+        return click.getchar()
+    return input()
+
 
 def empty_buffer_line():
     for i in range(0, 120):
@@ -25,8 +41,8 @@ def empty_buffer_line():
 
 def get_input_buffer(message: str):
     empty_buffer_line()
-    click.echo(message, nl=False)
-    return click.getchar()
+    aware_print(message, nl=False)
+    return aware_getch()
 
 
 def passthrough(letter: str, handler, prefix: str) -> str:
@@ -52,7 +68,7 @@ class InputHandler:
         input_buffer = get_input_buffer(prompt)
         if prompt != "":
             # This isn't a top level event, this is in the context of a text prompt
-            click.echo(input_buffer, nl=False)
+            aware_print(input_buffer, nl=False)
             return input_buffer
         for letter in input_buffer:
             self.input_queue.put(letter)
@@ -60,7 +76,7 @@ class InputHandler:
 
     def take_directional_input(self):
         empty_buffer_line()
-        click.echo("In which direction? ", nl=False)
+        aware_print("In which direction? ", nl=False)
         return self.take_input()
 
     def register_handler(

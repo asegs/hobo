@@ -1,14 +1,15 @@
-import click
 import random
+
+from core import input_handler
 
 
 def ask_about_map():
-    click.echo("Choose your map preset.")
-    click.echo(
+    input_handler.aware_print("Choose your map preset.", nl=True)
+    input_handler.aware_print(
         "(d)efault, (i)slands, (f)orest, (m)eadow, (s)wamp, or (c)ustom: ", nl=False
     )
-    choice = click.getchar()
-    click.echo(choice, nl=False)
+    choice = input_handler.aware_getch()
+    input_handler.aware_print(choice, nl=False)
     settings = {}
     match choice:
         case "d":
@@ -66,7 +67,7 @@ def ask_about_map():
             settings = take_custom_input()
     print()
     if settings != {}:
-        click.echo("Generating map...")
+        input_handler.aware_print("Generating map...", True)
         return settings
 
 

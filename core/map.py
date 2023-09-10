@@ -58,6 +58,7 @@ class Map:
         self.bg_theming = bg_theming
         self.turns = 0
         self.status_rules = status_rules
+        self.changes_since_display = []
 
     def coord_inbounds(self, coord: Coord):
         return 0 <= coord.row < self.height and 0 <= coord.col < self.width
@@ -79,6 +80,8 @@ class Map:
                 self.grid[coord.row][coord.col].fg = to
             else:
                 self.grid[coord.row][coord.col].bg = to
+
+            self.changes_since_display.append(coord)
 
     def tile_is(self, coord: Coord, match: str, fg=False, bypass_inbounds=False):
         if bypass_inbounds or self.coord_inbounds(coord):
@@ -122,11 +125,19 @@ class Map:
                     handler(self, coord)
 
     def display(self, stats={}):
+        self.changes_since_display = []
         line_count = 0
         stat_keys = list(stats.keys())
         for line in self.grid:
+            last_bg = None
+            last_fg = None
+            pos = 0
             for tile in line:
-                print(self.tile_to_color(tile), end="")
+                (to_print, last_fg, last_bg) = self.tile_to_color(
+                    tile, last_fg, last_bg, (pos == self.width - 1)
+                )
+                pos += 1
+                print(to_print, end="")
             if line_count < len(stat_keys):
                 stat_name = stat_keys[line_count]
                 print(stat_name + ": ", end="")
@@ -148,6 +159,39 @@ class Map:
             line_count += 1
         if False:
             self.cursor_to_top()
+
+    def display_changes(self, stats={}):
+        for change in self.changes_since_display:
+            self.go_to(change)
+            tile = self.tile_at(change)
+            (to_print, last_fg, last_bg) = self.tile_to_color(tile, None, None, False)
+            print(to_print, end="")
+
+        stat_count = 0
+        for stat_key in stats:
+            self.go_to(Coord(stat_count, self.width))
+            print(theming.CLEAR_BG, end="")
+            print(theming.CLEAR_FG, end="")
+            print(stat_key + ": ", end="")
+            if stat_key in self.status_rules:
+                rule = self.status_rules[stat_key]
+                print(
+                    theming.color_text_with_score(
+                        str(stats[stat_key]), rule[0], rule[1], stats[stat_key]
+                    ),
+                    end="     ",
+                )
+            else:
+                print(
+                    str(stats[stat_key]),
+                    end="      ",
+                )
+            stat_count += 1
+
+        self.go_to(Coord(self.height - 1, self.width - 1))
+        print(theming.CLEAR_BG, end="")
+        print(theming.CLEAR_FG, end="")
+        self.changes_since_display = []
 
     def if_borders(self, match, coord: Coord, diag=False):
         not_edge = self.coord_not_edge(coord)
@@ -184,14 +228,23 @@ class Map:
 
         return count
 
-    def tile_to_color(self, tile):
+    def tile_to_color(self, tile, last_fg=None, last_bg=None, end_line=True):
         bg_color = self.bg_theming.get(tile.bg, theming.GREY)
         fg_color = self.fg_theming.get(tile.fg, theming.GREY)
-        return theming.full_rgb(tile.fg, fg_color, bg_color)
+        return (
+            theming.full_rgb(tile.fg, fg_color, bg_color, last_fg, last_bg, end_line),
+            fg_color,
+            bg_color,
+        )
 
     def cursor_to_top(self):
         print("\033[" + str(self.height + 1) + "A", end="")
-        print("\033[" + str(self.width) + "D", end="")
+        print("\033[" + str(999) + "D", end="")
+
+    def go_to(self, coord):
+        self.cursor_to_top()
+        print("\033[" + str(coord.row) + "B", end="")
+        print("\033[" + str(coord.col) + "C", end="")
 
     def coord_not_edge(self, coord: Coord) -> bool:
         return 0 < coord.row < self.height - 1 and 0 < coord.col < self.width - 1

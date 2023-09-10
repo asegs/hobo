@@ -237,8 +237,13 @@ def interact_handler(
     return interact(m, player)
 
 
+def move_down_handler(letter, handler, prefix):
+    return move_player(m, player, input_handler.Movement.DOWN)
+
+
 input_entry.register_handler("b", build_handler)
 input_entry.register_handler("i", interact_handler)
+input_entry.register_handler("d", move_down_handler)
 
 
 def place_tile(mp: map.Map, p: Player):
@@ -371,10 +376,10 @@ m.initialize_terrain(map_generator.ask_about_map())
 m.display()
 
 player = make_player(m)
+m.cursor_to_top()
+m.display(player.stats)
 
 while True:
-    m.cursor_to_top()
-    m.display(player.stats)
     if CYCLE_TEST:
         m.simulate_turn(1000)
     action = input_entry.take_input()
@@ -383,3 +388,4 @@ while True:
     turn_length = travel_time(m.tile_at(player.pos).bg)
     handle_player_stats(player, turn_length)
     m.simulate_turn(turn_length)
+    m.display_changes(player.stats)

@@ -3,16 +3,63 @@ import colorist
 
 MAX_HUE = 138
 
-COLOR_CACHE = {}
+BG_CACHE = {}
+FG_CACHE = {}
 
+
+def hex_to_rgb(hex_color):
+    return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def hex_to_ansi_string(hex_color):
+    color_value = hex_to_rgb(hex_color)
+    return (
+        str(color_value[0])
+        + ";"
+        + str(color_value[1])
+        + ";"
+        + str(color_value[2])
+        + "m"
+    )
+
+
+def cache_or_create(color, fg=True):
+    global BG_CACHE
+    global FG_CACHE
+    if fg:
+        if color in FG_CACHE:
+            return FG_CACHE[color]
+        color_string = "\033[38;2;" + hex_to_ansi_string(color)
+        FG_CACHE[color] = color_string
+        return color_string
+
+    if color in BG_CACHE:
+        return BG_CACHE[color]
+
+    color_string = "\033[48;2;" + hex_to_ansi_string(color)
+    FG_CACHE[color] = color_string
+    return color_string
+
+
+CLEAR_FG = "\033[39m"
+CLEAR_BG = "\033[49m"
 
 
 def hsv2rgb(h, s, v):
     return tuple(round(i * 255) for i in colorsys.hsv_to_rgb(h, s, v))
 
 
-def full_rgb(text, fg, bg):
-    return f"{colorist.BgColorRGB(bg[0], bg[1], bg[2]) }{colorist.ColorRGB(fg[0], fg[1], fg[2])}{text}{colorist.Color.OFF}{colorist.BgColor.OFF}"
+def full_rgb(text, fg, bg, last_fg=None, last_bg=None, end_line=True):
+    to_return = ""
+    if fg != last_fg:
+        to_return += cache_or_create(fg, True)
+    if bg != last_bg:
+        to_return += cache_or_create(bg, False)
+    to_return += text
+    if end_line:
+        to_return += CLEAR_FG + CLEAR_BG
+
+    return to_return
 
 
 def to_color_text(text, rgb):
@@ -32,17 +79,17 @@ def color_text_with_score(text, worst, best, score):
     return to_color_text(text, color_quality(worst, best, score))
 
 
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+RED = "ff0000"
+GREEN = "00ff00"
+BLUE = "0000ff"
 
-DEEP_GREEN = (3, 84, 9)
-MID_GREEN = (0, 156, 12)
-LIGHT_GREEN = (95, 179, 46)
+DEEP_GREEN = "035409"
+MID_GREEN = "009c0c"
+LIGHT_GREEN = "5fb32e"
 
-WATER = (45, 109, 194)
-GREY = (142, 152, 153)
-DARK_BROWN = (82, 48, 5)
-TAN = (235, 134, 52)
+WATER = "2d6dc2"
+GREY = "8e9899"
+DARK_BROWN = "523005"
+TAN = "eb8634"
 
-ATTENTION = (212, 212, 25)
+ATTENTION = "d4d419"
