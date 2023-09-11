@@ -188,7 +188,7 @@ class Map:
                 )
             stat_count += 1
 
-        self.go_to(Coord(self.height - 1, self.width - 1))
+        self.go_to(Coord(self.height - 1, self.width))
         print(theming.CLEAR_BG, end="")
         print(theming.CLEAR_FG, end="")
         self.changes_since_display = []
