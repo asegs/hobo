@@ -1,2 +1,2 @@
-colorist==1.61
+colorist==1.6.1
 click==8.1.3
