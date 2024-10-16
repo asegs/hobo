@@ -357,7 +357,7 @@ status_rules = {
 
 m = map.Map(
     165,
-    54,
+    45,
     UNINITIALIZED,
     " ",
     [draw_streams, erode, draw_land, place_berries],
