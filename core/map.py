@@ -1,3 +1,4 @@
+import math
 import random
 
 from core import input_handler
@@ -32,6 +33,12 @@ diag_borders = [Coord(-1, -1), Coord(-1, 1), Coord(1, -1), Coord(1, 1)]
 
 def coord_diff(c1: Coord, c2: Coord):
     return Coord(c1.row + c2.row, c1.col + c2.col)
+
+
+def coord_distance(coord1: Coord, coord2: Coord):
+    x_dist = abs(coord1.col - coord2.col)
+    y_dist = abs(coord1.row - coord2.row)
+    return math.sqrt(x_dist**2 + y_dist**2)
 
 
 class Map:
@@ -164,7 +171,7 @@ class Map:
         for change in self.changes_since_display:
             self.go_to(change)
             tile = self.tile_at(change)
-            (to_print, last_fg, last_bg) = self.tile_to_color(tile, None, None, False)
+            (to_print, last_fg, last_bg) = self.tile_to_color(tile, None, None, True)
             print(to_print, end="")
 
         stat_count = 0
@@ -218,7 +225,7 @@ class Map:
         if diag:
             for border in diag_borders:
                 if self.tile_is(
-                    coord_diff(border, coord), match, bypass_inbounds=not_edge
+                        coord_diff(border, coord), match, bypass_inbounds=not_edge
                 ):
                     count += 1
 
@@ -226,7 +233,21 @@ class Map:
             if self.tile_is(coord_diff(border, coord), match, bypass_inbounds=not_edge):
                 count += 1
 
-        return count
+    def iterate_borders(self, coord: Coord, diag=True):
+        borders = []
+        count = 0
+        if diag:
+            for border in diag_borders:
+                diag_coord = coord_diff(border, coord)
+                if self.coord_inbounds(diag_coord):
+                    borders.append(diag_coord)
+
+        for border in straight_borders:
+            straight_coord = coord_diff(border, coord)
+            if self.coord_inbounds(straight_coord):
+                borders.append(straight_coord)
+
+        return borders
 
     def tile_to_color(self, tile, last_fg=None, last_bg=None, end_line=True):
         bg_color = self.bg_theming.get(tile.bg, theming.GREY)
