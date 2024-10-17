@@ -24,7 +24,8 @@ def fresh_stats():
         "Living": 0,
         "Direction": "",
         "Carrying": "",
-        "Equipped": "Gloves"
+        "Equipped": "Gloves",
+        "Status": "Welcome"
     }
 
 status_rules = {
@@ -66,7 +67,8 @@ fg_themes = {
     "@": theming.ATTENTION,
     "O": theming.GREY,
     "V": theming.BLUE,
-    "&": theming.DARK_BROWN
+    "&": theming.DARK_BROWN,
+    "*": theming.RED
 }
 
 
@@ -211,14 +213,18 @@ def gen_fire_spread(mp: map.Map, args):
 def health_manager(mp: map.Map, args):
     if player.under == "X":
         player.stats["Health"] -= fire_damage
+        player.stats["Status"] = "AHHHHHHH!!!"
     elif player.under == "O":
         player.stats["Breath"] -= 1
         if player.stats["Breath"] < 0:
             player.stats["Health"] -= player.stats["Breath"] ** 2
+            player.stats["Status"] = "GASP"
     else:
         player.stats["Breath"] = 10
         if player.stats["Health"] < 100:
             player.stats["Health"] += heal_out_of_combat
+            if player.stats["Status"] == "AHHHHHHH!!!" or player.stats["Status"] == "GASP":
+                player.stats["Status"] = "Phew."
 
     if player.stats["Health"] < 0:
         die()
