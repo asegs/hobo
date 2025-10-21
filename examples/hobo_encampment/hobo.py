@@ -376,7 +376,6 @@ m.initialize_terrain(map_generator.ask_about_map())
 m.display()
 
 player = make_player(m)
-m.cursor_to_top()
 m.display(player.stats)
 
 while True:

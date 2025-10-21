@@ -1,7 +1,7 @@
 import random
 from core import input_handler, map, theming
-from firefighter_arsenal import hands, crowbar, sledge, light_extinguisher, heavy_extinguisher, cleaner, Tool, Player
-from phone_call import get_line
+from .firefighter_arsenal import hands, crowbar, sledge, light_extinguisher, heavy_extinguisher, cleaner, Tool, Player
+from .phone_call import get_line
 
 map_height = 15
 map_width = 50

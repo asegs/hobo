@@ -1,6 +1,6 @@
 import math
 import random
-
+from blessed import Terminal
 from core import input_handler
 from core import theming
 from dataclasses import dataclass
@@ -52,7 +52,7 @@ class Map:
         tile_handlers: list,
         fg_theming: dict,
         bg_theming: dict,
-        status_rules={},
+        status_rules={}
     ):
         self.grid = [
             [Tile(default_fg, default_bg) for i in range(width)] for j in range(height)
@@ -66,6 +66,8 @@ class Map:
         self.turns = 0
         self.status_rules = status_rules
         self.changes_since_display = []
+        self.terminal = Terminal()
+        self.terminal.fullscreen()
 
     def coord_inbounds(self, coord: Coord):
         return 0 <= coord.row < self.height and 0 <= coord.col < self.width
@@ -131,6 +133,8 @@ class Map:
                 for coord in all_tiles:
                     handler(self, coord)
 
+
+
     def display(self, stats={}):
         self.changes_since_display = []
         line_count = 0
@@ -164,8 +168,6 @@ class Map:
 
             print()
             line_count += 1
-        if False:
-            self.cursor_to_top()
 
     def display_changes(self, stats={}):
         for change in self.changes_since_display:
@@ -258,14 +260,10 @@ class Map:
             bg_color,
         )
 
-    def cursor_to_top(self):
-        print("\033[" + str(self.height + 1) + "A", end="")
-        print("\033[" + str(999) + "D", end="")
 
     def go_to(self, coord):
-        self.cursor_to_top()
-        print("\033[" + str(coord.row) + "B", end="")
-        print("\033[" + str(coord.col) + "C", end="")
+        print(self.terminal.move_xy(coord.col, coord.row), end="")
+
 
     def coord_not_edge(self, coord: Coord) -> bool:
         return 0 < coord.row < self.height - 1 and 0 < coord.col < self.width - 1
